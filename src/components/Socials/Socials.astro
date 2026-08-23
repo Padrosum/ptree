@@ -1,0 +1,28 @@
+---
+import Icon from "../UI/Icon.astro";
+import { SOCIAL_ICON_MAP, SOCIAL_LABEL } from "../../data/icons";
+import type { SocialConfig } from "../../config";
+
+interface Props {
+  socials: SocialConfig[];
+}
+
+const { socials } = Astro.props;
+---
+
+<nav class="socials" aria-label="Social links">
+  {
+    socials.map((social) => (
+      <a
+        class="social-link"
+        href={social.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={SOCIAL_LABEL[social.platform]}
+        title={SOCIAL_LABEL[social.platform]}
+      >
+        <Icon name={SOCIAL_ICON_MAP[social.platform]} size={20} />
+      </a>
+    ))
+  }
+</nav>

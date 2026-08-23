@@ -1,0 +1,33 @@
+---
+import type { FooterConfig } from "../../config";
+
+interface Props {
+  footer?: FooterConfig;
+}
+
+const { footer } = Astro.props;
+const showPoweredBy = footer?.showPoweredBy ?? true;
+const text = footer?.text;
+---
+
+<footer class="footer">
+  {
+    text ? (
+      footer?.url ? (
+        <a href={footer.url} rel="noopener noreferrer">
+          {text}
+        </a>
+      ) : (
+        <span>{text}</span>
+      )
+    ) : showPoweredBy ? (
+      <a
+        href="https://github.com/Padrosum/ptree"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Built with ptree
+      </a>
+    ) : null
+  }
+</footer>

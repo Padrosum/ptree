@@ -1,0 +1,82 @@
+---
+import { config } from "../config";
+import { withBase, absoluteUrl } from "../data/paths";
+import "../styles/global.css";
+import "../themes/void.css";
+import "../themes/glass.css";
+import "../themes/terminal.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+
+const theme = config.theme;
+const name = config.profile.name;
+const siteTitle = config.seo?.title ?? name;
+const siteDescription =
+  description ?? config.seo?.description ?? config.profile.bio ?? "";
+const pageTitle = title ?? siteTitle;
+const ogImage = config.seo?.image ?? config.profile.avatar;
+
+const canonical = absoluteUrl();
+const ogImageUrl = ogImage ? absoluteUrl(ogImage) : undefined;
+
+const inlineVars: string[] = [];
+if (theme.accent) inlineVars.push(`--accent:${theme.accent}`);
+if (theme.background) inlineVars.push(`--bg:${theme.background}`);
+inlineVars.push(`--font:var(--font-${theme.font})`);
+---
+
+<!doctype html>
+<html lang={config.lang ?? "en"} data-theme={theme.name} style={inlineVars.join(";")}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={siteDescription} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href={withBase("/favicon.svg")} />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="robots" content="index, follow" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={name} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={siteDescription} />
+    <meta property="og:url" content={canonical} />
+    {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={siteDescription} />
+    {config.seo?.twitterHandle && (
+      <meta name="twitter:site" content={config.seo.twitterHandle} />
+    )}
+    {ogImageUrl && <meta name="twitter:image" content={ogImageUrl} />}
+
+    <script
+      is:inline
+      define:vars={{ mode: theme.mode }}
+    >
+      (function () {
+        var saved = null;
+        try { saved = localStorage.getItem("ptree:mode"); } catch (e) {}
+        var mode = saved || window.__PTREE_MODE__ || "auto";
+        var dark = window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.dataset.mode =
+          mode === "light" ? "light" : mode === "dark" ? "dark" : dark ? "dark" : "light";
+      })();
+    </script>
+
+    {config.customCss && (
+      <style is:inline set:html={config.customCss}></style>
+    )}
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

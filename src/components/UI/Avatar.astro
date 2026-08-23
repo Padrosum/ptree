@@ -1,0 +1,25 @@
+---
+import { withBase } from "../../data/paths";
+import { initials } from "../../data/profile";
+
+interface Props {
+  name: string;
+  avatar?: string;
+}
+
+const { name, avatar } = Astro.props;
+const src = avatar ? withBase(avatar) : null;
+const monogram = initials(name);
+---
+
+<div class="avatar">
+  {
+    src ? (
+      <img src={src} alt="" width={96} height={96} />
+    ) : (
+      <span class="avatar-fallback" role="img" aria-label={`${name} avatar`}>
+        {monogram}
+      </span>
+    )
+  }
+</div>

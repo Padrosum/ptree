@@ -1,0 +1,22 @@
+---
+import type { LinkConfig } from "../../config";
+import LinkCard from "./LinkCard.astro";
+
+interface Props {
+  links: LinkConfig[];
+  style?: "card" | "minimal";
+}
+
+const { links, style = "card" } = Astro.props;
+const sorted = [...links].sort(
+  (a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured))
+);
+---
+
+<ul class={`links${style === "minimal" ? " links--minimal" : ""}`}>
+  {sorted.map((link) => (
+    <li>
+      <LinkCard link={link} />
+    </li>
+  ))}
+</ul>

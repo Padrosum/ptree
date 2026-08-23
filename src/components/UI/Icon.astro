@@ -1,0 +1,16 @@
+---
+import { Icon } from "astro-icon/components";
+import { resolveIcon } from "../../data/icons";
+
+interface Props {
+  /** Friendly icon key or explicit iconify name (e.g. "lucide:rocket"). */
+  name?: string;
+  size?: number;
+  class?: string;
+}
+
+const { name, size = 20, class: className } = Astro.props;
+const resolved = resolveIcon(name);
+---
+
+<Icon name={resolved} size={size} class={className} aria-hidden="true" />

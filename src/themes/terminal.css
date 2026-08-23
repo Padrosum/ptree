@@ -1,0 +1,69 @@
+/**
+ * Terminal theme — hacker / developer aesthetic.
+ * Monospace type, hard edges, phosphor accent.
+ */
+
+[data-theme="terminal"] {
+  --bg: #e8e6df;
+  --bg-soft: #dedcd3;
+  --surface: #f4f2ea;
+  --surface-hover: #fbfaf3;
+  --surface-strong: #dcd9ce;
+  --border: #1c1b18;
+  --border-strong: #1c1b18;
+  --text: #1c1b18;
+  --text-muted: #4c4a44;
+  --text-faint: #8a877c;
+  --accent: #1a7f37;
+  --accent-contrast: #f4f2ea;
+  --radius: 2px;
+  --radius-lg: 4px;
+  --font: var(--font-mono);
+  --glow: 0 0 0 1px var(--border-strong);
+  --shadow: 3px 3px 0 var(--border-strong);
+  color-scheme: light;
+}
+
+[data-theme="terminal"][data-mode="dark"] {
+  --bg: #0a0c0a;
+  --bg-soft: #0f120f;
+  --surface: #141713;
+  --surface-hover: #1b1f19;
+  --surface-strong: #20251d;
+  --border: #33ff66;
+  --border-strong: #33ff66;
+  --text: #d6f5dd;
+  --text-muted: #8fae96;
+  --text-faint: #4c6b53;
+  --accent: #33ff66;
+  --accent-contrast: #0a0c0a;
+  --radius: 2px;
+  --radius-lg: 4px;
+  --font: var(--font-mono);
+  --glow: 0 0 12px color-mix(in srgb, var(--accent) 55%, transparent);
+  --shadow: 3px 3px 0 var(--border-strong);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="terminal"]:not([data-mode]) {
+    --bg: #0a0c0a;
+    --bg-soft: #0f120f;
+    --surface: #141713;
+    --surface-hover: #1b1f19;
+    --surface-strong: #20251d;
+    --border: #33ff66;
+    --border-strong: #33ff66;
+    --text: #d6f5dd;
+    --text-muted: #8fae96;
+    --text-faint: #4c6b53;
+    --accent: #33ff66;
+    --accent-contrast: #0a0c0a;
+    --radius: 2px;
+    --radius-lg: 4px;
+    --font: var(--font-mono);
+    --glow: 0 0 12px color-mix(in srgb, var(--accent) 55%, transparent);
+    --shadow: 3px 3px 0 var(--border-strong);
+    color-scheme: dark;
+  }
+}

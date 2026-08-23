@@ -1,0 +1,26 @@
+---
+import type { ProfileConfig } from "../../config";
+import Avatar from "../UI/Avatar.astro";
+import Icon from "../UI/Icon.astro";
+
+interface Props {
+  profile: ProfileConfig;
+}
+
+const { profile } = Astro.props;
+---
+
+<header class="profile">
+  <Avatar name={profile.name} avatar={profile.avatar} />
+  <h1 class="profile-name">{profile.name}</h1>
+  <p class="profile-username">@{profile.username}</p>
+  {profile.bio && <p class="profile-bio">{profile.bio}</p>}
+  {
+    profile.location && (
+      <p class="profile-location">
+        <Icon name="pin" size={14} />
+        <span>{profile.location}</span>
+      </p>
+    )
+  }
+</header>

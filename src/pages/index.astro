@@ -1,0 +1,23 @@
+---
+import { config } from "../config";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import BlackHole from "../components/Background/BlackHole.astro";
+import Profile from "../components/Profile/Profile.astro";
+import Socials from "../components/Socials/Socials.astro";
+import Links from "../components/Links/Links.astro";
+import Footer from "../components/Footer/Footer.astro";
+
+const { profile, links, socials, theme, footer, background } = config;
+---
+
+<BaseLayout>
+  {background === "blackhole" && <BlackHole />}
+  <main class="page">
+    <div class="page-inner">
+      <Profile profile={profile} />
+      <Socials socials={socials} />
+      <Links links={links} style={theme.linkStyle} />
+      <Footer footer={footer} />
+    </div>
+  </main>
+</BaseLayout>
