@@ -161,17 +161,17 @@ Themes are implemented as CSS custom-property tokens (`src/themes/*.css`). Compo
 The top-level `background` option adds a full-screen effect behind the page content:
 
 ```ts
-background: "blackhole",
+    background: "voxel",
 ```
 
-**blackhole** renders a physically-inspired black hole: a ray-traced Schwarzschild geodesics solver bends each ray of light around the hole, so the accretion disk is shown at its real, lensed position (the bright arc that curves above and below the void). The disk has a temperature gradient, turbulent bands, relativistic **Doppler beaming** (the approaching side is brighter) and **gravitational redshift**. It is a single WebGL2 fragment shader on a fixed canvas, so it is:
+**voxel** renders an interactive Minecraft-like world on a fixed canvas. Visitors can drag to rotate the world, use the wheel to zoom, click to build, Shift-click to remove a block, and use `WASD` or the arrow keys to control the camera. Small cats wander through the world while the scene moves through a slow day/night cycle. It is:
 
 - **opt-in** — omit `background` for a plain CSS-only page;
-- **paused** when the browser tab is hidden;
-- **static** when the visitor has `prefers-reduced-motion: reduce` (one frame, no animation);
-- **graceful** — if WebGL2 is unavailable the effect is skipped and the page renders normally.
+- **lightweight** — uses the 2D canvas API and no external assets or runtime dependencies;
+- **responsive** — adapts its scale and controls to touch and pointer devices;
+- **graceful** — if canvas is unavailable, the page content still renders normally.
 
-It looks best with a dark theme and dark `mode`. Performance is bounded by rendering the canvas at 48–68% of the CSS resolution depending on viewport width, then pausing when hidden.
+It looks best with the `void` theme. The world is rendered behind the content, so the link cards remain readable while the scene stays interactive around them.
 
 ## Local development
 
@@ -239,7 +239,7 @@ When a custom domain is active, `base` resolves to `/` automatically (asset URLs
 
 ## Performance & privacy
 
-- Zero runtime JavaScript on the default page except a ~500-byte inline theme script that respects `prefers-color-scheme` (the optional `background: "blackhole"` effect adds a single WebGL shader when enabled).
+- Zero runtime JavaScript on the default page except a small inline theme script that respects `prefers-color-scheme` (the optional `background: "voxel"` effect adds a small canvas renderer when enabled).
 - Icons are inlined SVG at build time; fonts are the system stack.
 - No analytics, no cookies, no external requests on the published page.
 

@@ -85,10 +85,9 @@ export function validateConfig(input: unknown): PtreeConfig {
   const lang = validateOptionalString(input.lang, "lang", errors);
 
   const backgroundRaw = input.background;
-  const background =
-    backgroundRaw === "blackhole" ? ("blackhole" as const) : undefined;
-  if (backgroundRaw !== undefined && backgroundRaw !== "blackhole") {
-    errors.push("background must be one of: blackhole");
+  const background = backgroundRaw === "voxel" ? ("voxel" as const) : undefined;
+  if (backgroundRaw !== undefined && backgroundRaw !== "voxel") {
+    errors.push("background must be one of: voxel");
   }
 
   if (errors.length > 0) {

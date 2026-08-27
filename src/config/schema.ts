@@ -86,7 +86,7 @@ export interface FooterConfig {
   url?: string;
 }
 
-export type BackgroundEffect = "blackhole";
+export type BackgroundEffect = "voxel";
 
 export interface PtreeConfig {
   /** Page language for the <html lang> attribute (e.g. "en", "tr"). */

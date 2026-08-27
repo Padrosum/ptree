@@ -12,7 +12,7 @@ const external = isExternal(link.url);
 ---
 
 <a
-  class="link-card"
+  class:list={["link-card", { "link-card--featured": link.featured }]}
   href={link.url}
   {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
 >

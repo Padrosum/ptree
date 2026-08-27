@@ -21,12 +21,12 @@ export default {
   theme: {
     name: "void",
     mode: "auto",
-    accent: "#e0a458",
+    accent: "#e5484d",
     font: "system",
     linkStyle: "card",
   },
 
-  background: "blackhole",
+  background: "voxel",
 
   links: [
     {
@@ -51,10 +51,17 @@ export default {
       badge: "Proje",
     },
     {
-      title: "FOSS CLI Music Player",
-      url: "https://github.com/Padrosum/pmusic",
+      title: "Pmusic - FOSS CLI Music Player",
+      url: "https://pmusic.alihankarakus.com/",
       icon: "music",
       description: "Özgür ve açık kaynaklı komut satırı müzik oynatıcı.",
+      badge: "FOSS",
+    },
+    {
+      title: "PlovesPDF",
+      url: "https://github.com/Padrosum/plovespdf",
+      icon: "file",
+      description: "ILOVEPDF'in FOSS hali.",
       badge: "FOSS",
     },
   ],

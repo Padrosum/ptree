@@ -14,14 +14,14 @@
   --border: rgba(255, 255, 255, 0.09);
   --border-strong: rgba(255, 255, 255, 0.18);
   --text: #f5f5f4;
-  --text-muted: #a3a3a3;
-  --text-faint: #525252;
+  --text-muted: #b8b8b8;
+  --text-faint: #777777;
   --accent: #e0a458;
   --accent-contrast: #0a0a0a;
   --radius: 14px;
   --radius-lg: 20px;
   --glow: 0 0 0 1px var(--accent);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 48px -30px rgba(0, 0, 0, 0.8);
   --glass-blur: 0px;
 
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
@@ -62,6 +62,19 @@ body {
   overflow-x: hidden;
 }
 
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  content: "";
+  opacity: 0.22;
+  background-image: linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, black, transparent 72%);
+}
+
 a {
   color: inherit;
 }
@@ -74,13 +87,54 @@ svg {
 
 /* ---------------- Page layout ---------------- */
 
-.blackhole {
+.voxel-world {
   position: fixed;
   inset: 0;
   z-index: 0;
   width: 100%;
   height: 100%;
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+}
+
+.voxel-world:active {
+  cursor: grabbing;
+}
+
+.world-hint {
+  position: fixed;
+  right: 28px;
+  bottom: 24px;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   pointer-events: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-shadow: 0 1px 10px var(--bg);
+}
+
+.world-hint-label {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.world-phase {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.world-hint i {
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  margin: 0 8px 2px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .page {
@@ -92,15 +146,101 @@ svg {
   justify-content: center;
   width: 100%;
   min-height: 100vh;
-  padding: 56px 20px 40px;
+  padding: 72px 28px 42px;
 }
 
 .page-inner {
   width: 100%;
-  max-width: 520px;
+  max-width: 980px;
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.page-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.78fr) minmax(420px, 1.22fr);
+  align-items: center;
+  gap: clamp(3.5rem, 9vw, 8rem);
+  width: 100%;
+}
+
+.hero-panel,
+.links-panel {
+  min-width: 0;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface) 76%, transparent);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
+
+.hero-panel {
+  position: relative;
+}
+
+.hero-panel::after {
+  position: absolute;
+  top: 2.6rem;
+  right: clamp(-4rem, -5vw, -2rem);
+  bottom: 0;
+  width: 1px;
+  content: "";
+  background: linear-gradient(to bottom, var(--border-strong), transparent);
+}
+
+.panel-meta,
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-meta {
+  margin-bottom: 4.5rem;
+  color: var(--text-faint);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.panel-label,
+.section-label {
+  color: var(--accent);
+}
+
+.panel-number,
+.link-count {
+  font-family: var(--font-mono);
+}
+
+.section-heading {
+  align-items: flex-end;
+  margin-bottom: 1.65rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-label {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.section-heading h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(1.35rem, 2vw, 1.65rem);
+  letter-spacing: -0.035em;
+}
+
+.link-count {
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
 }
 
 /* ---------------- Profile ---------------- */
@@ -108,20 +248,20 @@ svg {
 .profile {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
+  text-align: left;
   gap: 4px;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .avatar {
-  width: 96px;
-  height: 96px;
+  width: 112px;
+  height: 112px;
   border-radius: 50%;
   overflow: hidden;
-  margin-bottom: 16px;
-  border: 2px solid var(--border);
-  box-shadow: var(--glow);
+  margin: 0 0 22px;
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 0 0 7px var(--accent-soft), var(--glow);
   transition: box-shadow var(--speed) var(--ease), transform var(--speed) var(--ease);
 }
 
@@ -150,26 +290,29 @@ svg {
 
 .profile-name {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 700;
-  letter-spacing: -0.01em;
+  line-height: 1.05;
+  letter-spacing: -0.055em;
 }
 
 .profile-username {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.86rem;
+  letter-spacing: 0.03em;
   color: var(--text-muted);
 }
 
 .profile-bio {
-  margin: 10px 0 0;
+  margin: 18px 0 0;
   max-width: 42ch;
   color: var(--text-muted);
-  font-size: 0.98rem;
+  font-size: 0.94rem;
+  line-height: 1.7;
 }
 
 .profile-location {
-  margin: 6px 0 0;
+  margin: 14px 0 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -182,19 +325,19 @@ svg {
 .socials {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 10px;
-  margin-bottom: 28px;
+  margin-bottom: 22px;
 }
 
 .social-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--surface);
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
   border: 1px solid var(--border);
   color: var(--text-muted);
   transition: color var(--speed) var(--ease), transform var(--speed) var(--ease),
@@ -206,6 +349,16 @@ svg {
   color: var(--accent);
   border-color: var(--accent);
   transform: translateY(-2px);
+}
+
+.hero-caption {
+  max-width: 27ch;
+  margin: 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  line-height: 1.65;
 }
 
 /* ---------------- Links ---------------- */
@@ -228,15 +381,19 @@ svg {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 18px;
+  min-height: 78px;
+  padding: 16px 18px;
   width: 100%;
   text-decoration: none;
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);
   transition: background var(--speed) var(--ease), border-color var(--speed) var(--ease),
-    transform var(--speed) var(--ease), box-shadow var(--speed) var(--ease);
+    transform var(--speed) var(--ease), box-shadow var(--speed) var(--ease),
+    padding var(--speed) var(--ease);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(var(--glass-blur));
 }
 
 .link-card:hover {
@@ -244,6 +401,17 @@ svg {
   border-color: var(--accent);
   transform: translateY(-2px);
   box-shadow: var(--glow);
+}
+
+.link-card--featured {
+  min-height: 94px;
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  background: linear-gradient(105deg, var(--accent-soft), var(--surface));
+}
+
+.link-card--featured .link-icon {
+  width: 46px;
+  height: 46px;
 }
 
 .link-card:focus-visible {
@@ -256,8 +424,8 @@ svg {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 12px;
   background: var(--accent-soft);
   color: var(--accent);
@@ -279,7 +447,8 @@ svg {
 
 .link-title {
   font-weight: 600;
-  font-size: 0.98rem;
+  font-size: 0.95rem;
+  color: var(--text);
 }
 
 .link-badge {
@@ -294,7 +463,7 @@ svg {
 }
 
 .link-description {
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -319,6 +488,8 @@ svg {
   padding: 12px 14px;
   border-radius: 0;
   border-bottom: 1px solid var(--border);
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .links--minimal .link-card:hover {
@@ -337,7 +508,7 @@ svg {
 /* ---------------- Footer ---------------- */
 
 .footer {
-  margin-top: 44px;
+  margin-top: 58px;
   font-size: 0.8rem;
   color: var(--text-faint);
   display: flex;
@@ -376,5 +547,89 @@ svg {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 860px) {
+  .page {
+    padding: 48px 18px 32px;
+  }
+
+  .page-inner {
+    max-width: 540px;
+  }
+
+  .page-grid {
+    grid-template-columns: 1fr;
+    gap: 3.5rem;
+  }
+
+  .hero-panel::after {
+    top: auto;
+    right: 0;
+    bottom: -1.75rem;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, var(--border-strong), transparent);
+  }
+
+  .panel-meta {
+    margin-bottom: 3.5rem;
+  }
+
+  .profile,
+  .socials {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .profile-location {
+    justify-content: center;
+  }
+
+  .hero-caption {
+    margin-right: auto;
+    margin-left: auto;
+    text-align: center;
+  }
+
+  .section-heading {
+    margin-bottom: 1.25rem;
+  }
+
+  .world-hint {
+    right: 18px;
+    bottom: 14px;
+    font-size: 0.52rem;
+  }
+}
+
+@media (max-width: 460px) {
+  .page {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .link-card,
+  .link-card--featured {
+    min-height: 74px;
+    padding: 13px 14px;
+  }
+
+  .link-card--featured .link-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .link-description {
+    max-width: 30ch;
+  }
+
+  .world-hint {
+    right: 14px;
+    left: 14px;
+    justify-content: center;
+    font-size: 0.48rem;
   }
 }

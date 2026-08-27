@@ -1,0 +1,402 @@
+<canvas class="voxel-world" data-voxel-world aria-hidden="true"></canvas>
+<div class="world-hint" aria-hidden="true">
+  <span class="world-hint-label">WORLD 01</span>
+  <span class="world-phase" data-world-phase>DAY</span>
+  <span>WASD / ARROWS <i></i> + / - ZOOM</span>
+</div>
+
+<script is:inline>
+  (function () {
+    var canvas = document.querySelector("canvas[data-voxel-world]");
+    if (!canvas) return;
+
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    var size = 18;
+    var center = (size - 1) / 2;
+    var columns = [];
+    var animals = [
+      { x: 12.2, z: 8.5, radius: 1.45, speed: 0.42, phase: 0, colors: { top: "#e7b56e", left: "#b87b43", right: "#8b592f" } },
+      { x: 6.2, z: 11.8, radius: 1.1, speed: 0.34, phase: 2.6, colors: { top: "#d9d4c8", left: "#aaa59a", right: "#817c73" } },
+    ];
+    var view = { width: 0, height: 0, dpr: 1, scale: 24 };
+    var camera = { yaw: -0.58, pitch: 0.48, zoom: 1 };
+    var pointer = { down: false, moved: false, x: 0, y: 0, lastX: 0, lastY: 0 };
+    var hover = null;
+    var phase = 0.22;
+    var elapsed = 0;
+    var frame = 0;
+    var reducedMotion = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var phaseLabel = document.querySelector("[data-world-phase]");
+    var cycleDuration = 90000;
+    var dark = document.documentElement.dataset.mode === "dark" ||
+      (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+    var palette = {
+      grass: { top: "#8cae67", left: "#5b7945", right: "#466338" },
+      dirt: { top: "#956e4c", left: "#6d4c35", right: "#533827" },
+      stone: { top: "#788385", left: "#596365", right: "#414a4c" },
+      sand: { top: "#d5ba7c", left: "#ad9059", right: "#8d7346" },
+      water: { top: "#5eafbd", left: "#3e7e91", right: "#2d6073" },
+      trunk: { top: "#a6784b", left: "#795435", right: "#5f402a" },
+      leaves: { top: "#70965b", left: "#4b7041", right: "#365936" },
+    };
+
+    function terrainHeight(x, z) {
+      var wave = Math.sin(x * 0.71) + Math.cos(z * 0.54) + Math.sin((x + z) * 0.33);
+      var hill = Math.max(0, 2.5 - Math.hypot(x - center, z - center) * 0.25);
+      return Math.max(1, Math.min(6, Math.floor(2.2 + wave * 0.62 + hill)));
+    }
+
+    function makeWorld() {
+      for (var x = 0; x < size; x += 1) {
+        for (var z = 0; z < size; z += 1) {
+          var height = terrainHeight(x, z);
+          var water = height < 2 || (x < 3 && z > 11);
+          var column = {
+            x: x,
+            z: z,
+            height: water ? 0.72 : height,
+            type: water ? "water" : height === 1 ? "sand" : height > 4 ? "stone" : "grass",
+            tree: false,
+          };
+
+          if (!water && x > 2 && x < size - 3 && z > 2 && z < size - 3 &&
+            ((x * 13 + z * 7) % 19 === 0)) {
+            column.tree = true;
+          }
+          columns.push(column);
+        }
+      }
+    }
+
+    function projection(x, z, y) {
+      var dx = x - center;
+      var dz = z - center;
+      var cosine = Math.cos(camera.yaw);
+      var sine = Math.sin(camera.yaw);
+      var rotatedX = dx * cosine - dz * sine;
+      var rotatedZ = dx * sine + dz * cosine;
+      var scale = view.scale * camera.zoom;
+      return {
+        x: view.width / 2 + rotatedX * scale,
+        y: view.height * 0.58 + rotatedZ * scale * camera.pitch - y * scale * 0.72,
+        depth: rotatedZ,
+      };
+    }
+
+    function polygon(points, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (var i = 1; i < points.length; i += 1) ctx.lineTo(points[i].x, points[i].y);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 0.7;
+        ctx.stroke();
+      }
+    }
+
+    function drawCube(x, z, bottom, top, type) {
+      var colors = palette[type];
+      var topA = projection(x, z, top);
+      var topB = projection(x + 1, z, top);
+      var topC = projection(x + 1, z + 1, top);
+      var topD = projection(x, z + 1, top);
+      var bottomC = projection(x + 1, z + 1, bottom);
+      var bottomD = projection(x, z + 1, bottom);
+      var edge = dark ? "rgba(4, 16, 20, 0.42)" : "rgba(31, 52, 48, 0.24)";
+
+      polygon([topD, topC, bottomC, bottomD], colors.right, edge);
+      polygon([topA, topD, bottomD, projection(x, z, bottom)], colors.left, edge);
+      polygon([topA, topB, topC, topD], colors.top, edge);
+
+      if (type === "water") {
+        ctx.strokeStyle = dark ? "rgba(190, 240, 230, 0.34)" : "rgba(255, 255, 255, 0.42)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(topA.x + 4, topA.y - 1);
+        ctx.lineTo(topC.x - 4, topC.y - 1);
+        ctx.stroke();
+      }
+    }
+
+    function drawSmallCube(x, z, bottom, width, depth, height, colors) {
+      var x0 = x - width / 2;
+      var x1 = x + width / 2;
+      var z0 = z - depth / 2;
+      var z1 = z + depth / 2;
+      var topA = projection(x0, z0, bottom + height);
+      var topB = projection(x1, z0, bottom + height);
+      var topC = projection(x1, z1, bottom + height);
+      var topD = projection(x0, z1, bottom + height);
+      var bottomA = projection(x0, z0, bottom);
+      var bottomC = projection(x1, z1, bottom);
+      var bottomD = projection(x0, z1, bottom);
+      var edge = dark ? "rgba(4, 16, 20, 0.38)" : "rgba(31, 52, 48, 0.2)";
+
+      polygon([topD, topC, bottomC, bottomD], colors.right, edge);
+      polygon([topA, topD, bottomD, bottomA], colors.left, edge);
+      polygon([topA, topB, topC, topD], colors.top, edge);
+    }
+
+    function groundHeight(x, z) {
+      var columnX = Math.max(0, Math.min(size - 1, Math.floor(x)));
+      var columnZ = Math.max(0, Math.min(size - 1, Math.floor(z)));
+      return columns[columnX * size + columnZ].height;
+    }
+
+    function catPosition(animal, seconds) {
+      var angle = seconds * animal.speed + animal.phase;
+      var x = animal.x + Math.cos(angle) * animal.radius;
+      var z = animal.z + Math.sin(angle * 0.83) * animal.radius;
+      return { x: x, z: z, ground: groundHeight(x, z), walking: Math.abs(Math.cos(angle * 3)) };
+    }
+
+    function drawCat(animal, seconds) {
+      var position = catPosition(animal, seconds);
+      var bob = position.walking * 0.045;
+      var ground = position.ground;
+      var x = position.x;
+      var z = position.z;
+
+      drawSmallCube(x, z, ground + 0.12 + bob, 0.7, 0.95, 0.48, animal.colors);
+      drawSmallCube(x, z - 0.25, ground + 0.58 + bob, 0.58, 0.58, 0.46, animal.colors);
+
+      var leftEar = projection(x - 0.2, z - 0.42, ground + 1.04 + bob);
+      var centerEar = projection(x - 0.08, z - 0.42, ground + 1.29 + bob);
+      var rightEar = projection(x + 0.08, z - 0.42, ground + 1.04 + bob);
+      polygon([leftEar, centerEar, rightEar], animal.colors.top, dark ? "rgba(4, 16, 20, 0.35)" : "rgba(31, 52, 48, 0.18)");
+
+      var face = projection(x, z - 0.57, ground + 0.83 + bob);
+      ctx.fillStyle = dark ? "#172024" : "#493d36";
+      ctx.fillRect(face.x - 4, face.y, 2, 2);
+      ctx.fillRect(face.x + 2, face.y, 2, 2);
+
+      ctx.strokeStyle = animal.colors.right;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(projection(x + 0.3, z + 0.3, ground + 0.42 + bob).x, projection(x + 0.3, z + 0.3, ground + 0.42 + bob).y);
+      ctx.quadraticCurveTo(
+        projection(x + 0.62, z + 0.42, ground + 0.68 + bob).x,
+        projection(x + 0.62, z + 0.42, ground + 0.68 + bob).y,
+        projection(x + 0.65, z + 0.08, ground + 0.76 + bob).x,
+        projection(x + 0.65, z + 0.08, ground + 0.76 + bob).y
+      );
+      ctx.stroke();
+    }
+
+    function drawSky() {
+      var daylight = (Math.sin(phase * Math.PI * 2) + 1) / 2;
+      var gradient = ctx.createLinearGradient(0, 0, 0, view.height);
+      gradient.addColorStop(0, mixColor("#07151e", "#9cc5c4", daylight));
+      gradient.addColorStop(0.58, mixColor("#12333b", "#c5d6bd", daylight));
+      gradient.addColorStop(1, mixColor("#1a332f", "#d8c99f", daylight));
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, view.width, view.height);
+
+      var celestialX = view.width * 0.5 + Math.cos(phase * Math.PI * 2) * view.width * 0.36;
+      var celestialY = view.height * 0.2 - Math.sin(phase * Math.PI * 2) * view.height * 0.12;
+      ctx.globalAlpha = 0.28 + daylight * 0.55;
+      ctx.fillStyle = mixColor("#d5e5db", "#ffe1a6", daylight);
+      ctx.fillRect(celestialX - 4, celestialY - 4, 8, 8);
+      ctx.fillRect(celestialX - 7, celestialY - 1, 14, 2);
+      ctx.fillRect(celestialX - 1, celestialY - 7, 2, 14);
+      ctx.globalAlpha = 1;
+
+      ctx.fillStyle = mixColor("#0f262a", "#688e85", daylight);
+      ctx.globalAlpha = 0.32 + (1 - daylight) * 0.36;
+      ctx.beginPath();
+      ctx.moveTo(0, view.height * 0.62);
+      for (var x = 0; x <= view.width; x += 32) {
+        ctx.lineTo(x, view.height * 0.55 + Math.sin(x * 0.008) * 24);
+      }
+      ctx.lineTo(view.width, view.height);
+      ctx.lineTo(0, view.height);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      ctx.globalAlpha = 0.08 + daylight * 0.26;
+      ctx.fillStyle = "#fff8d8";
+      ctx.fillRect(view.width * 0.08, view.height * 0.25, 48, 5);
+      ctx.fillRect(view.width * 0.11, view.height * 0.23, 25, 6);
+      ctx.fillRect(view.width * 0.15, view.height * 0.27, 34, 4);
+      ctx.globalAlpha = 1;
+
+      if (phaseLabel) phaseLabel.textContent = daylight > 0.42 ? "DAY" : "NIGHT";
+    }
+
+    function mixColor(from, to, amount) {
+      var start = from.match(/[a-f\d]{2}/gi).map(function (value) { return parseInt(value, 16); });
+      var end = to.match(/[a-f\d]{2}/gi).map(function (value) { return parseInt(value, 16); });
+      return "rgb(" + start.map(function (value, index) {
+        return Math.round(value + (end[index] - value) * amount);
+      }).join(",") + ")";
+    }
+
+    function drawSelection(column) {
+      if (!column) return;
+      var y = column.height + (column.tree ? 3 : 0);
+      var a = projection(column.x, column.z, y + 0.02);
+      var b = projection(column.x + 1, column.z, y + 0.02);
+      var c = projection(column.x + 1, column.z + 1, y + 0.02);
+      var d = projection(column.x, column.z + 1, y + 0.02);
+      polygon([a, b, c, d], "rgba(244, 211, 119, 0.12)", "rgba(255, 224, 139, 0.78)");
+    }
+
+    function drawWorld(seconds) {
+      var items = [];
+      columns.forEach(function (column) {
+        items.push({ depth: projection(column.x + 0.5, column.z + 0.5, 0).depth, draw: function () {
+          drawCube(column.x, column.z, 0, column.height, column.type);
+        }});
+
+        if (column.tree) {
+          items.push({ depth: projection(column.x + 0.5, column.z + 0.5, column.height).depth + 0.01, draw: function () {
+            drawCube(column.x, column.z, column.height, column.height + 2.1, "trunk");
+            drawCube(column.x, column.z, column.height + 2.1, column.height + 3.1, "leaves");
+            drawCube(column.x - 0.55, column.z, column.height + 1.6, column.height + 2.5, "leaves");
+            drawCube(column.x + 0.55, column.z, column.height + 1.6, column.height + 2.5, "leaves");
+          }});
+        }
+      });
+      animals.forEach(function (animal) {
+        var position = catPosition(animal, seconds);
+        items.push({ depth: projection(position.x, position.z, position.ground).depth + 0.02, draw: function () {
+          drawCat(animal, seconds);
+        }});
+      });
+      items.sort(function (a, b) { return a.depth - b.depth; });
+      items.forEach(function (item) { item.draw(); });
+      drawSelection(hover);
+    }
+
+    function resize() {
+      var rect = canvas.getBoundingClientRect();
+      view.width = rect.width;
+      view.height = rect.height;
+      view.dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      view.scale = Math.max(15, Math.min(view.width, view.height) / 23);
+      canvas.width = Math.floor(view.width * view.dpr);
+      canvas.height = Math.floor(view.height * view.dpr);
+      render();
+    }
+
+    function render(now) {
+      if (!reducedMotion && typeof now === "number") {
+        elapsed = now / 1000;
+        phase = (0.22 + (now % cycleDuration) / cycleDuration) % 1;
+      }
+      ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
+      ctx.clearRect(0, 0, view.width, view.height);
+      drawSky();
+      drawWorld(elapsed);
+    }
+
+    function pick(clientX, clientY) {
+      var closest = null;
+      var closestDistance = Infinity;
+      columns.forEach(function (column) {
+        var point = projection(column.x + 0.5, column.z + 0.5, column.height + (column.tree ? 3 : 0));
+        var distance = Math.hypot(point.x - clientX, point.y - clientY);
+        if (distance < closestDistance && distance < view.scale * 1.15) {
+          closest = column;
+          closestDistance = distance;
+        }
+      });
+      return closest;
+    }
+
+    canvas.addEventListener("pointerdown", function (event) {
+      pointer.down = true;
+      pointer.moved = false;
+      pointer.x = event.clientX;
+      pointer.y = event.clientY;
+      pointer.lastX = event.clientX;
+      pointer.lastY = event.clientY;
+      canvas.setPointerCapture(event.pointerId);
+    });
+
+    canvas.addEventListener("pointermove", function (event) {
+      hover = pick(event.clientX, event.clientY);
+      if (!pointer.down) {
+        render();
+        return;
+      }
+      var deltaX = event.clientX - pointer.lastX;
+      var deltaY = event.clientY - pointer.lastY;
+      if (Math.abs(event.clientX - pointer.x) + Math.abs(event.clientY - pointer.y) > 5) {
+        pointer.moved = true;
+      }
+      camera.yaw += deltaX * 0.009;
+      pointer.lastX = event.clientX;
+      pointer.lastY = event.clientY;
+      if (Math.abs(deltaY) > 0) camera.zoom = Math.max(0.72, Math.min(1.45, camera.zoom - deltaY * 0.001));
+      render();
+    });
+
+    canvas.addEventListener("pointerup", function (event) {
+      if (!pointer.moved) {
+        var column = pick(event.clientX, event.clientY);
+        if (column) {
+          if (event.shiftKey) {
+            column.height = Math.max(column.type === "water" ? 0.72 : 1, column.height - 1);
+          } else if (column.type !== "water") {
+            column.height = Math.min(8, column.height + 1);
+          }
+          render();
+        }
+      }
+      pointer.down = false;
+      canvas.releasePointerCapture(event.pointerId);
+    });
+
+    canvas.addEventListener("pointercancel", function () { pointer.down = false; });
+    canvas.addEventListener("wheel", function (event) {
+      event.preventDefault();
+      camera.zoom = Math.max(0.72, Math.min(1.45, camera.zoom - event.deltaY * 0.001));
+      render();
+    }, { passive: false });
+
+    window.addEventListener("keydown", function (event) {
+      var key = event.key.toLowerCase();
+      var changed = true;
+      if (key === "arrowleft" || key === "a") camera.yaw -= 0.12;
+      else if (key === "arrowright" || key === "d") camera.yaw += 0.12;
+      else if (key === "arrowup" || key === "w") camera.pitch = Math.min(0.7, camera.pitch + 0.04);
+      else if (key === "arrowdown" || key === "s") camera.pitch = Math.max(0.28, camera.pitch - 0.04);
+      else if (key === "+" || key === "=") camera.zoom = Math.min(1.45, camera.zoom + 0.08);
+      else if (key === "-" || key === "_") camera.zoom = Math.max(0.72, camera.zoom - 0.08);
+      else if (key === "r") {
+        camera.yaw = -0.58;
+        camera.pitch = 0.48;
+        camera.zoom = 1;
+      } else changed = false;
+
+      if (changed) {
+        event.preventDefault();
+        render();
+      }
+    });
+
+    function animate(now) {
+      render(now);
+      frame = requestAnimationFrame(animate);
+    }
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) cancelAnimationFrame(frame);
+      else if (!reducedMotion) frame = requestAnimationFrame(animate);
+    });
+
+    makeWorld();
+    window.addEventListener("resize", resize);
+    resize();
+    if (!reducedMotion) frame = requestAnimationFrame(animate);
+  })();
+</script>
